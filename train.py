@@ -70,10 +70,10 @@ def main():
 
 
     loss_func = TripletLoss(margin = config['triplet_loss_margin'])
-    dataset = StampDataset('data/stamps/stamps',train_transform)
+    dataset = StampDataset(config['train_dir'],train_transform)
     device = 'cuda'
     
-    model_dict = initialize_model(config)
+    model_dict = initialize_model(config,device=device)
 
 
     dataloader = DataLoader(dataset,batch_size=config['batch_size'],shuffle=True,num_workers=4,pin_memory=True,drop_last=True)

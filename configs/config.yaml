@@ -1,6 +1,9 @@
+train_dir:
+  desc: Train dir path
+  value: 'data/stamps/stamps'
 batch_size:
   desc: Batch size
-  value: 32
+  value: 64
 triplet_loss_margin:
   desc: Triplet loss margin
   value: 2.0
