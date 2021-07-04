@@ -9,12 +9,12 @@ triplet_loss_margin:
   value: 2.0
 epochs:
   desc: Max epochs to train for
-  value: 20
+  value: 1000
 lr:
   desc: Learning rate
   value: 0.01
 patience_scheduler:
-  value: 2
+  value: 3
 hidden_sizes:
   desc: Hidden sizes of projection head 
   value: [512,512,512]
