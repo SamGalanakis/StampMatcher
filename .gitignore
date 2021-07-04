@@ -1,3 +1,11 @@
+
+
+data/
+model_save/
+processed_data/
+wandb/
+.vscode/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
