@@ -12,14 +12,17 @@ epochs:
   value: 1000
 lr:
   desc: Learning rate
-  value: 0.01
+  value: 0.001
 patience_scheduler:
-  value: 5
+  value: 4
 hidden_sizes:
   desc: Hidden sizes of projection head 
-  value: [512,512,512]
+  value: [1024,512,512,512]
 emb_dim:
   desc: Projection dimension
-  value: 124
+  value: 512
+checkpoint_path:
+  desc: Checkpoint to start training from
+  value: False
   
 

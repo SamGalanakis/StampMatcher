@@ -1,66 +1,14 @@
 import torch
 import torchvision.transforms as transforms
-from torchvision.transforms.transforms import ColorJitter, GaussianBlur
 import wandb
-import torchvision
 from dataloaders import StampDataset
 from torch.utils.data import DataLoader
 from model.losses import TripletLoss
 from tqdm import tqdm
 import os 
-from model import MLP
-from dataloaders import knn_query_manager
-from utils import put_on_device
+from test import generate_results
+from  model_loading import initialize_model,load_save,get_transforms
 
-def get_transforms(config):
-    start_transforms_train = transforms.Compose([
-        transforms.Resize((256, 256)),
-        transforms.RandomCrop((224, 224)),
-        ])
-    
-    start_transforms_test = transforms.Compose([
-        transforms.Resize((100, 100)),
-        transforms.CenterCrop((224, 224)),
-        ])
-
-    augmentations = transforms.Compose([
-        transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomRotation(degrees=(-90, 90)),
-        transforms.ColorJitter(),
-        transforms.RandomVerticalFlip(p=0.2),
-        transforms.RandomPerspective(distortion_scale=0.6, p=0.5),
-        transforms.GaussianBlur(11)
-        ])
-
-    end_transforms = transforms.Compose([#transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                     std=[0.229, 0.224, 0.225])])
-
-
-    train_transform = transforms.Compose([start_transforms_train,augmentations,end_transforms])
-
-
-    test_transform = transforms.Compose([start_transforms_test,end_transforms])
-
-    return train_transform,test_transform
-
-
-def initialize_model(config,device):
-    encoder = torchvision.models.resnet50(pretrained=True).to(device)
-    encoder_out  = encoder.fc.out_features
-    for parameter in encoder.parameters():
-        parameter.requires_grad = False
-
-    projection_head  = MLP(encoder_out,config['hidden_sizes'],config['emb_dim'],nonlin=torch.nn.GELU(),residual=True).to(device)
-
-    return {'projection_head':projection_head,'encoder':encoder}
-
-
-def load_save(model_dict,config,save_dict,device):
-    model_dict['projection_head'].load_state_dict(save_dict['projection_head'])
-    for key,val in model_dict.items():
-        val = put_on_device(val,device)
-    return model_dict
 
 
 def main():
@@ -75,16 +23,25 @@ def main():
     dataset = StampDataset(config['train_dir'],train_transform)
     device = 'cuda'
     
-    model_dict = initialize_model(config,device=device)
-
-
-    dataloader = DataLoader(dataset,batch_size=config['batch_size'],shuffle=True,num_workers=4,pin_memory=True,drop_last=True)
+    model_dict = initialize_model(config,device=device,mode='train')
 
     optimizer = torch.optim.Adam(
-                model_dict['projection_head'].parameters(), lr=config["lr"])
+                model_dict['encoder'].fc.parameters(), lr=config["lr"],weight_decay=0.001)
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,patience=  config['patience_scheduler'], 
     factor=0.1, min_lr=1E-8,verbose=True)
+
+    if config['checkpoint_path']:
+        print(f'Loading from checkpoint')
+        save_dict = torch.load(config['checkpoint_path'])
+        model_dict = load_save(model_dict,config,save_dict,device)
+        optimizer.load_state_dict(save_dict['optimizer'])
+        scheduler.load_state_dict(save_dict['scheduler'])
+    else:
+        print('Training from scratch')
+    dataloader = DataLoader(dataset,batch_size=config['batch_size'],shuffle=True,num_workers=4,pin_memory=True,drop_last=True)
+
+    
 
 
     save_model_path = 'model_save/'
@@ -97,8 +54,7 @@ def main():
             optimizer.zero_grad()
             batch = [x.to(device) for x in batch]
             embeddings = [model_dict['encoder'](x) for x in batch]
-            projected_embeddings = [model_dict['projection_head'](x) for x in embeddings]
-            loss = loss_func(*projected_embeddings)
+            loss = loss_func(*embeddings)
             loss.backward()
             optimizer.step()
             loss_item = loss.item()
@@ -118,12 +74,13 @@ def main():
             savepath = os.path.join(
                 save_model_path, f"{wandb.run.name}_e{epoch}_model_dict.pt")
             
-            save_dict = {'config': config._items, "projection_head": model_dict['projection_head'].state_dict(
-            )}
+            save_dict = {'config': config._items,'encoder':model_dict['encoder'].state_dict(),'scheduler':scheduler.state_dict(),'optimizer':optimizer.state_dict()}
             torch.save(save_dict, savepath)
             last_save_path = savepath
-
             best_so_far = min(loss_running_avg,best_so_far)
+            figs = generate_results(config,savepath,k=8)
+            img_dict = {f'result_{i}':figs[i] for i in range(len(figs))}
+            wandb.log(img_dict)
 
 if __name__ == '__main__':
     main()

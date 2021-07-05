@@ -5,7 +5,7 @@ model_save/
 processed_data/
 wandb/
 .vscode/
-
+results/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

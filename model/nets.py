@@ -20,11 +20,15 @@ class MLP(nn.Module):
         x = self.nonlin(self.in_layer(x))
 
         for index, layer in enumerate(self.layers):
-            if ((index % 2) == 0):
+            if ((index % 2) == 0) and self.residual:
                 residual = x
                 x = self.nonlin(layer(x))
-            else:
+            elif ((index % 2) == 0) and not self.residual:
+                x = self.nonlin(layer(x))
+            elif ((index % 2) != 0) and self.residual:
                 x = self.nonlin(residual+layer(x))
+            else:
+                x = self.nonlin(layer(x))
 
         x = self.out_layer(x)
         return x

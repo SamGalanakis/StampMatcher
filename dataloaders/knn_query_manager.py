@@ -42,7 +42,7 @@ class KnnQueryManager:
         projections = []
 
         dataset = TestLoaderForKnn(root_dir,transforms)
-        dataloader = DataLoader(dataset,batch_size=200,num_workers=8,pin_memory=True,shuffle=False)
+        dataloader = DataLoader(dataset,batch_size=200,num_workers=4,pin_memory=True,shuffle=False)
         print('Creating index')
         with torch.no_grad():
             for img in tqdm(dataloader):
