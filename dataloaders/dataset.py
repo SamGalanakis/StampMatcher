@@ -4,7 +4,7 @@ import os
 import io
 import random
 from utils import custom_pil_loader
-
+import numpy as np
 
 class StampDataset(Dataset):
     def __init__(self,root_dir,transforms,mode = 'train'):
@@ -31,7 +31,8 @@ class StampDataset(Dataset):
         
         main_image = custom_pil_loader(main_img_path)
         nagative_image = custom_pil_loader(nagative_img_path)
-
+        main_image = torch.from_numpy(np.asarray(main_image).astype(np.float32)/255).permute(2,0,1)
+        nagative_image = torch.from_numpy(np.asarray(nagative_image).astype(np.float32)/255).permute(2,0,1)
         anchor = self.transforms(main_image)
         positive = self.transforms(main_image)
         negative = self.transforms(nagative_image)

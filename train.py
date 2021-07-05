@@ -14,25 +14,27 @@ from utils import put_on_device
 
 def get_transforms(config):
     start_transforms_train = transforms.Compose([
-        transforms.Resize((100, 100)),
-        transforms.RandomCrop((80, 80)),
+        transforms.Resize((256, 256)),
+        transforms.RandomCrop((224, 224)),
         ])
     
     start_transforms_test = transforms.Compose([
         transforms.Resize((100, 100)),
-        transforms.RandomCrop((80, 80)),
+        transforms.CenterCrop((224, 224)),
         ])
 
     augmentations = transforms.Compose([
         transforms.RandomHorizontalFlip(p=0.5),
         transforms.RandomRotation(degrees=(-90, 90)),
         transforms.ColorJitter(),
-        transforms.RandomVerticalFlip(p=0.5),
+        transforms.RandomVerticalFlip(p=0.2),
+        transforms.RandomPerspective(distortion_scale=0.6, p=0.5),
         transforms.GaussianBlur(11)
         ])
 
-    end_transforms = transforms.Compose([transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+    end_transforms = transforms.Compose([#transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                     std=[0.229, 0.224, 0.225])])
 
 
     train_transform = transforms.Compose([start_transforms_train,augmentations,end_transforms])

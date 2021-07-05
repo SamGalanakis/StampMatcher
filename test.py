@@ -25,7 +25,7 @@ def get_query_manager(checkpoint_path):
 
 if __name__ == '__main__':
     test_dir = 'data/stamps/test_images'
-    checkpoint_path  = 'model_save/swift-butterfly-25_e19_model_dict.pt'
+    checkpoint_path  = 'model_save\golden-universe-26_e36_model_dict.pt'
     query_manager = get_query_manager(checkpoint_path)
     for img_path in os.listdir(test_dir):
         path = os.path.join(test_dir,img_path)

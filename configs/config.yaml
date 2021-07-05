@@ -14,12 +14,12 @@ lr:
   desc: Learning rate
   value: 0.01
 patience_scheduler:
-  value: 3
+  value: 5
 hidden_sizes:
   desc: Hidden sizes of projection head 
   value: [512,512,512]
 emb_dim:
   desc: Projection dimension
-  value: 32
+  value: 124
   
 
