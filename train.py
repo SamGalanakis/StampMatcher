@@ -23,13 +23,17 @@ def main():
     dataset = StampDataset(config['train_dir'],train_transform)
     device = 'cuda'
     
-    model_dict = initialize_model(config,device=device,mode='train')
+    model_dict = initialize_model(config,device=device,mode='train',freeze_backbone=config['freeze_backbone'])
+    
+    if config['freeze_backbone']:
+        parameters = model_dict['encoder'].fc.parameters()
+    else:
+        parameters = model_dict['encoder'].parameters()
 
-    optimizer = torch.optim.Adam(
-                model_dict['encoder'].fc.parameters(), lr=config["lr"],weight_decay=0.001)
+    optimizer = torch.optim.Adam(parameters, lr=config["lr"],weight_decay=0.0)
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,patience=  config['patience_scheduler'], 
-    factor=0.1, min_lr=1E-8,verbose=True)
+    factor=0.5, min_lr=1E-8,verbose=True)
 
     if config['checkpoint_path']:
         print(f'Loading from checkpoint')
@@ -60,10 +64,11 @@ def main():
             loss_item = loss.item()
             loss_running_avg = (
                 loss_running_avg*(batch_ind) + loss_item)/(batch_ind+1)
-        current_lr = optimizer.param_groups[0]['lr']
-        scheduler.step(loss)
+            current_lr = optimizer.param_groups[0]['lr']
+            scheduler.step(loss)
+            wandb.log({"loss_batch": loss_item,'current_lr':current_lr})
 
-        wandb.log({"loss_epoch": loss_running_avg,'current_lr':current_lr})
+        wandb.log({"loss_epoch": loss_running_avg})
         
 
         
@@ -78,7 +83,7 @@ def main():
             torch.save(save_dict, savepath)
             last_save_path = savepath
             best_so_far = min(loss_running_avg,best_so_far)
-            figs = generate_results(config,savepath,k=8)
+            figs = generate_results(savepath,k=8,data_dir = "data\stamps\stamps")
             img_dict = {f'result_{i}':figs[i] for i in range(len(figs))}
             wandb.log(img_dict)
 

@@ -1,9 +1,9 @@
 train_dir:
   desc: Train dir path
-  value: 'data/stamps/stamps'
+  value: 'data\all_stamps'
 batch_size:
   desc: Batch size
-  value: 64
+  value: 16
 triplet_loss_margin:
   desc: Triplet loss margin
   value: 2.0
@@ -12,9 +12,9 @@ epochs:
   value: 1000
 lr:
   desc: Learning rate
-  value: 0.001
+  value: 0.00005
 patience_scheduler:
-  value: 4
+  value: 1000
 hidden_sizes:
   desc: Hidden sizes of projection head 
   value: [1024,512,512,512]
@@ -24,5 +24,7 @@ emb_dim:
 checkpoint_path:
   desc: Checkpoint to start training from
   value: False
+freeze_backbone:
+  value: model_save/major-pond-85_e3_model_dict.pt
   
 

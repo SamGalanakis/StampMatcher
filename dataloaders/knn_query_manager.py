@@ -31,17 +31,18 @@ class TestLoaderForKnn(Dataset):
         return img
 
 class KnnQueryManager:
-    def __init__(self,config,root_dir,transforms,model,device='cuda'):
+    def __init__(self,config,root_dir,test_transform,aug_transform,model,device='cuda'):
         self.root_dir = root_dir
         self.config = config
-        self.transforms = transforms
+        self.test_transform = test_transform
+        self.aug_transform = aug_transform
         self.file_paths = os.listdir(root_dir)
         self.device = device
         model.eval()
         self.model = model.to(device)
         projections = []
-
-        dataset = TestLoaderForKnn(root_dir,transforms)
+    
+        dataset = TestLoaderForKnn(root_dir,test_transform)
         dataloader = DataLoader(dataset,batch_size=200,num_workers=4,pin_memory=True,shuffle=False)
         print('Creating index')
         with torch.no_grad():
@@ -52,11 +53,18 @@ class KnnQueryManager:
         self.projections = torch.cat(projections)
     
 
-    def query(self,img_path,k=1,verbose = True):
+    def query(self,img_path,k=1,n_augs=10):
+        
         img = custom_pil_loader(img_path)
-        img = self.transforms(img).to(self.device).unsqueeze(0)
-        embedding = self.model(img).squeeze()
-        dist = torch.linalg.norm(self.projections - embedding, dim=-1)
+        augmented_imgs = []
+        augmented_imgs.append(self.test_transform(img))
+        augmented_imgs.extend([self.aug_transform(img) for x in range(n_augs)])
+        augmented_imgs = [x.to(self.device) for x in augmented_imgs]
+        embeddings = self.model(torch.stack(augmented_imgs))
+
+        dist = torch.cdist(self.projections , embeddings,p=2).mean(dim=-1)
+
+        
         knn = dist.topk(k, largest=False)
         indices = knn[1].tolist()
         paths = [os.path.join(self.root_dir,self.file_paths[ind]) for ind in indices]
